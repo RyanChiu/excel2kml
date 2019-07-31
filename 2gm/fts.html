@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>清单落图（KML）</title>
+<script src="../lib/js/jquery-3.3.1.min.js"></script>
+<script src="../lib/js/kml_predefs.js"></script>
+<script src="../lib/js/file_littlekits.js"></script>
+<script src="../lib/js/js-xlsx-master/dist/xlsx.full.min.js"></script>
+<style>
+	.centerbox{
+		position:absolute;
+		top:50%;
+		left:50%;
+		transform:translate(-50%,-50%);
+	}
+</style>
+<link href="../lib/bootstrap-4.3.1-dist/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+</head>
+<body>
+	
+	<div class="alert alert-primary text-center" id="divAlert" style="display:none;">
+	......
+	</div>
+	
+	<div class="alert alert-warning text-center" id="divAlertWarning" style="display:none;">
+	......
+	</div>
+	
+	<div class="alert alert-success text-center" id="divAlertSave" style="display:none;">
+	......
+	</div>
+	
+	<div class="centerbox">
+		<input type="button" value="点击上传“专线业务地址清单”文件" class="btn btn-outline-primary btn-lg" style="width:565px;" onclick="javascript:$('#speciallineIpt').click();" /> <br><br>
+		<input type="button" value="点击上传“波分核心节点清单”文件" class="btn btn-outline-primary btn-lg" style="width:565px;" onclick="javascript:$('#simpleIpt').click();" /> <br><br>
+		<input type="button" value="点击上传“波分环清单”文件" class="btn btn-outline-primary btn-lg" style="width:565px;" onclick="javascript:$('#ringsIpt').click();" /> <br><br>
+		<input type="button" value="点击上传“楼间缆清单”文件" class="btn btn-outline-primary btn-lg" style="width:565px;" onclick="javascript:$('#interfibersIpt').click();" />
+	</div>
+	<div style="display:none;">
+		<input id="speciallineIpt" type="file" onchange="impProcessf(this, 'specialline')" /> <br><br>
+		<input id="simpleIpt" type="file" onchange="impProcessf(this, 'simple')" /> <br><br>
+		<input id="ringsIpt" type="file" onchange="impProcessf(this, 'rings')" /> <br><br>
+		<input id="interfibersIpt" type="file" onchange="impProcessf(this, 'interfibers')" />
+		<br>
+		<textarea id="excel2json" rows="11" cols="120" readonly="readonly">待显示载入的excel内容(调测用)...</textarea>
+		<br>
+		<textarea id="output" rows="22" cols="160" readonly="readonly">待转换载入的excel内容为xml格式文本（调测用）...</textarea>
+		<br>
+	</div>
+	<script>
+            /*
+            FileReader共有4种读取方法：
+            1.readAsArrayBuffer(file)：将文件读取为ArrayBuffer。
+            2.readAsBinaryString(file)：将文件读取为二进制字符串
+            3.readAsDataURL(file)：将文件读取为Data URL
+            4.readAsText(file, [encoding])：将文件读取为文本，encoding缺省值为'UTF-8'
+            */
+            var wb;//读取完成的数据
+            var rABS = false; //是否将文件读取为二进制字符串
+
+            function impProcessf(obj, whatkind) {//导入
+                if(!obj.files) {
+                    return;
+                }
+				var f = obj.files[0];
+				var fn = f.name.substring(0, f.name.indexOf('.'));
+                var reader = new FileReader();
+                reader.onload = function(e) {
+				
+					$("#divAlert").html('载入文件...');
+					$("#divAlert").show().delay(1500).fadeOut();
+				
+                    var data = e.target.result;
+                    if(rABS) {
+                        wb = XLSX.read(btoa(fixdata(data)), {//手动转化
+                            type: 'base64'
+                        });
+                    } else {
+                        wb = XLSX.read(data, {
+                            type: 'binary'
+                        });
+					}
+
+					if (wb.SheetNames.length < 2) {
+						$("#divAlert").hide();
+						$("#divAlertWarning").html('<div style="font-weight:bold;color:red;">上传的Excel文件应至少包含2个sheet（第1个是成对的机楼信息或者其他包含经纬度的点，第2个是所有相关机楼的局站编码、经纬度等|或为空），请上传正确格式的文件。</div>');
+						$("#divAlertWarning").show().delay(6500).fadeOut();
+						//alert("Excel文件应至少包含2个sheet。第1个是成对的机楼信息，第2个是所有相关机楼的局站编码、经纬度等。");
+						return;
+					};
+					//wb.SheetNames[0]是获取Sheets中第一个Sheet的名字，以此类推
+					//wb.Sheets[Sheet名]获取第一个Sheet的数据
+					var sheet0_json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+					var sheet1_json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[1]]);
+					document.getElementById("excel2json").value = JSON.stringify( sheet0_json ) + '\n' + JSON.stringify( sheet1_json );
+
+					var theFinalOutput = "";
+					var outputFile = "";
+					switch (whatkind) {
+					case 'interfibers':
+						var tp_pairs = new Array();
+						var tp_pair = "";
+						var i = 0;
+						var styles = "";
+						$.each(sheet0_json, function(n, value) {
+							tp_pair = '' + value.TOTAL + '_' + per2color(value.PERCENTAGE);
+							if (tp_pairs.indexOf(tp_pair) == -1) {
+								styles += linestylewith(value.TOTAL, value.PERCENTAGE, false);
+								tp_pairs[i] = tp_pair;
+								i++;
+							}
+						});
+						var _sites = new Array();
+						var _site = "";
+						i = 0;
+						var sites = "";
+						$.each(sheet0_json, function(n, value) {
+							if (_sites.indexOf(value.A_SITECODE) == -1) {
+								sites += sitewith(value.A_SITECODE, value.A_DP, sheet1_json, "");
+								_sites[i] = value.A_SITECODE;
+								i++;
+							}
+							if (_sites.indexOf(value.Z_SITECODE) == -1) {
+								sites += sitewith(value.Z_SITECODE, value.Z_DP, sheet1_json, "");
+								_sites[i] = value.Z_SITECODE;
+								i++;
+							}
+						});
+						var xml_text = "";
+						$.each(sheet0_json, function(n, value) {
+							xml_text += "<Placemark><name>";
+							xml_text += value.GROUP;
+							xml_text += "</name><ExtendedData>\n";
+							xml_text += '<Data name="纤芯总数"><value>' + value.TOTAL + '</value></Data>\n';
+							xml_text += '<Data name="实占芯数"><value>' + value.OCUPIED + '</value></Data>\n';
+							xml_text += '<Data name="保留芯数"><value>' + value.REMAIN + '</value></Data>\n';
+							xml_text += '<Data name="空闲芯数"><value>' + value.FREE + '</value></Data>\n';
+							xml_text += '<Data name="故障芯数"><value>' + value.FAULT + '</value></Data>\n';
+							xml_text += '<Data name="占用率"><value>' + parseFloat(value.PERCENTAGE * 100).toFixed(2) + '%</value></Data>\n';
+							xml_text += '</ExtendedData>\n<styleUrl>#' + linestylewith(value.TOTAL, value.PERCENTAGE, true) + '</styleUrl>\n';
+							xml_text += '<gx:balloonVisibility>1</gx:balloonVisibility>\n';
+							/*
+							** ★★★★★下面这句非常重要★★★★★
+							** 一对经纬度的格式必须是“经度,纬度,0 经度,纬度,0”，除了两对经纬度中间有1个空格以外，其它逗号和数中间不允许有任何空格;
+							** 函数lonlat的返回值也必须按照这个文本格式设定。
+							** ★★★★★下面这句非常重要★★★★★
+							*/
+							xml_text += '<LineString><coordinates>\n' + lonlat(value.A_SITECODE, sheet1_json) + ',0 ' + lonlat(value.Z_SITECODE, sheet1_json) + ',0\n</coordinates>\n</LineString>\n';
+							xml_text += "</Placemark>\n";
+						});
+						theFinalOutput = startswith('楼间缆清单') + styles + xml_text + sites + endswith;
+						break;
+					case 'simple':
+						/**
+						 * 这里不检查重复的成对机楼，请在原始数据中去重后导入
+						**/
+						var sitestyle = iconstylewith("station", false);
+						var sitestyleid = iconstylewith("station", true);
+						var _sites = new Array();
+						var _site = "";
+						var i = 0;
+						var sites = "";
+						$.each(sheet0_json, function(n, value) {
+							if (_sites.indexOf(value.A_SITECODE) == -1) {
+								sites += sitewith(value.A_SITECODE, "", sheet1_json, sitestyleid);
+								_sites[i] = value.A_SITECODE;
+								i++;
+							}
+							if (_sites.indexOf(value.Z_SITECODE) == -1) {
+								sites += sitewith(value.Z_SITECODE, "", sheet1_json, sitestyleid);
+								_sites[i] = value.Z_SITECODE;
+								i++;
+							}
+						});
+						var connections = "";
+						var linestyleid = linestylewith(72, 0.6, true);
+						var linestyle = linestylewith(72, 0.6, false);
+						$.each(sheet0_json, function(n, value) {
+							connections += '<Placemark><name>' + value.A_SITENAME + '~' + value.Z_SITENAME + '</name>\n';
+							connections += '<styleUrl>#' + linestyleid + '</styleUrl>\n';
+							connections += '<gx:balloonVisibility>1</gx:balloonVisibility>\n';
+							/*
+							** ★★★★★下面这句非常重要★★★★★
+							** 一对经纬度的格式必须是“经度,纬度,0 经度,纬度,0”，除了两对经纬度中间有1个空格以外，其它逗号和数中间不允许有任何空格;
+							** 函数lonlat的返回值也必须按照这个文本格式设定。
+							** ★★★★★下面这句非常重要★★★★★
+							*/
+							connections += '<LineString><coordinates>\n' + lonlat(value.A_SITECODE, sheet1_json) + ',0 ' + lonlat(value.Z_SITECODE, sheet1_json) + ',0\n</coordinates>\n</LineString>\n';
+							connections += "</Placemark>\n";
+						});
+						theFinalOutput = startswith('波分核心节点清单') + sitestyle + linestyle + connections + sites + endswith;
+						break;
+					case 'rings':
+						var _sites = new Array();
+						var _site = "";
+						var i = 0;
+						var sites = "";
+						$.each(sheet0_json, function(n, value) {
+							if (_sites.indexOf(value.A_SITECODE) == -1) {
+								sites += sitewith(value.A_SITECODE, "", sheet1_json, "");
+								_sites[i] = value.A_SITECODE;
+								i++;
+							}
+							if (_sites.indexOf(value.Z_SITECODE) == -1) {
+								sites += sitewith(value.Z_SITECODE, "", sheet1_json, "");
+								_sites[i] = value.Z_SITECODE;
+								i++;
+							}
+						});
+
+						var ringnames = new Array();
+						var _rings = new Array();
+						var j = 0;
+						i = 0;
+						sheet0_json.forEach(function(row) {
+							if (ringnames.indexOf(row.RINGNAME) == -1) {
+								j = 0;
+								ringnames[i] = row.RINGNAME;
+								_rings[i] = new Array();
+								_rings[i][j] = new Array(row.RINGNAME, lonlat(row.A_SITECODE, sheet1_json), lonlat(row.Z_SITECODE, sheet1_json), row.LEVEL, row.DP, row.A_SITENAME + "," + row.Z_SITENAME);
+								j++;
+								i++;
+							} else {
+								_rings[i - 1][j] = new Array(row.RINGNAME, lonlat(row.A_SITECODE, sheet1_json), lonlat(row.Z_SITECODE, sheet1_json), row.LEVEL, row.DP, row.A_SITENAME + "," + row.Z_SITENAME);
+								j++;
+							}
+						});
+						// alert(ringnames.length + "," + _rings.length + " | " + ringnames[6] + "," + _rings[6][0][0]); // for debug
+						// $("#divAlertWarning").html(ringnames.toString() + "<br><hr><br>" + _rings.toString()); // for debug
+						// $("#divAlertWarning").show(); // for debug
+						var rings = "";
+						var ringstyleid = ringstylewith(true);
+						var ringstyle = ringstylewith(false);
+						_rings.forEach(function(row) {
+							rings += '<Placemark><name>' + row[0][0] + '</name>\n';
+							rings += '<styleUrl>#' + ringstyleid + '</styleUrl>\n';
+							rings += "<ExtendedData>\n";
+							rings += '<Data name="层级"><value>' + row[0][3] + '</value></Data>\n';
+							rings += '<Data name="区域"><value>' + row[0][4] + '</value></Data>\n';
+							rings += '</ExtendedData>\n';
+							rings += '<Polygon><outerBoundaryIs><LinearRing><coordinates>\n';
+							row.forEach(function(item) {
+								rings += item[1] + ',0 ' + item[2] + ',0 ';
+							});
+							rings += '\n</coordinates></LinearRing></outerBoundaryIs></Polygon>\n';
+							rings += '</Placemark>\n';
+						})
+
+						theFinalOutput = startswith('波分环清单') + ringstyle + rings + sites + endswith;
+						break;
+					case 'specialline':
+						/**
+						 * 专线业务落图：当专线业务有两端是，请按照模板将另一端单独成行
+						 * 
+						**/
+						var splstyle = iconstylewith("info", false);
+						var splestyleid = iconstylewith("info", true);
+						var _spls = new Array();
+						var _spl = "";
+						var i = 0;
+						var spls = "";
+						var ss ="";
+						var dp ="";
+						$.each(sheet0_json, function(n, value) {
+							if (dp == "") {
+								dp = value.DP;
+							}
+							ss = "";
+							ss += '<Placemark>\n';
+							ss += '<name>' + value.AC_NUM + '</name>\n';
+							if (splestyleid != "") {
+								ss += '<styleUrl>#' + splestyleid + '</styleUrl>';
+							}
+							ss += '<gx:balloonVisibility>1</gx:balloonVisibility>';
+							ss += '<ExtendedData>\n';
+							ss += '<Data name="所属分公司"><value>' + value.DP + '</value></Data>\n';
+							ss += '<Data name="产品类型编码"><value>' + value.P_CODE + '</value></Data>\n';
+							ss += '<Data name="专线类型"><value>' + value.P_TYPE + '</value></Data>\n';
+							ss += '<Data name="地址"><value>' + value.ADDR + '</value></Data>\n';
+							ss += '</ExtendedData>\n';
+							ss += '<Point><coordinates>\n';
+							ss += value.LON + ',' + value.LAT;
+							ss += '</coordinates></Point>\n';
+							ss += '</Placemark>\n';
+							spls += ss;
+						});
+						theFinalOutput = startswith('专线业务地址清单_' + dp) + splstyle + spls + endswith;
+						break;
+					}
+					outputFile = fn + "_落图_" + timestampnow() + ".kml";
+
+					if (theFinalOutput != "") {
+						document.getElementById("output").value = theFinalOutput;
+						$("#divAlertSave").html("保存为：" + outputFile);
+						$("#divAlertSave").show("slow");
+						//alert("即将保存为：" + outputFile);
+						doSave(theFinalOutput, "text/latex", outputFile);
+					} else {
+						$("#divAlert").hide();
+						$("#divAlertWarning").html('<div style="font-weight:bold;color:red;">暂无文件可保存</div>');
+						$("#divAlertWarning").show().delay(3500).fadeOut();
+					}
+                };
+                if(rABS) {
+                    reader.readAsArrayBuffer(f);
+                } else {
+                    reader.readAsBinaryString(f);
+                }
+            }
+
+            function fixdata(data) { //文件流转BinaryString
+                var o = "",
+                    l = 0,
+                    w = 10240;
+                for(; l < data.byteLength / w; ++l) o += String.fromCharCode.apply(null, new Uint8Array(data.slice(l * w, l * w + w)));
+                o += String.fromCharCode.apply(null, new Uint8Array(data.slice(l * w)));
+                return o;
+            }
+        </script>
+</body>
+</html>
