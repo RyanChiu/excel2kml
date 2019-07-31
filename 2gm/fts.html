@@ -32,10 +32,13 @@
 	</div>
 	
 	<div class="centerbox">
-		<input type="button" value="点击上传“专线业务地址清单”文件" class="btn btn-outline-primary btn-lg" style="width:565px;" onclick="javascript:$('#speciallineIpt').click();" /> <br><br>
-		<input type="button" value="点击上传“波分核心节点清单”文件" class="btn btn-outline-primary btn-lg" style="width:565px;" onclick="javascript:$('#simpleIpt').click();" /> <br><br>
-		<input type="button" value="点击上传“波分环清单”文件" class="btn btn-outline-primary btn-lg" style="width:565px;" onclick="javascript:$('#ringsIpt').click();" /> <br><br>
-		<input type="button" value="点击上传“楼间缆清单”文件" class="btn btn-outline-primary btn-lg" style="width:565px;" onclick="javascript:$('#interfibersIpt').click();" />
+		<div class="badge badge-dark text-wrap" style="width:565px;margin-bottom:23px;font-size:23px;">
+			点击下方按钮，载入需要落图的EXCEL文件，将自动转换为KML文件并保存到本地。
+		</div>
+		<input type="button" value="专线业务地址清单" class="btn btn-outline-primary btn-lg" style="width:565px;" onclick="javascript:$('#speciallineIpt').click();" /> <br><br>
+		<input type="button" value="波分核心节点清单" class="btn btn-outline-primary btn-lg" style="width:565px;" onclick="javascript:$('#simpleIpt').click();" /> <br><br>
+		<input type="button" value="波分环清单" class="btn btn-outline-primary btn-lg" style="width:565px;" onclick="javascript:$('#ringsIpt').click();" /> <br><br>
+		<input type="button" value="楼间缆清单" class="btn btn-outline-primary btn-lg" style="width:565px;" onclick="javascript:$('#interfibersIpt').click();" />
 	</div>
 	<div style="display:none;">
 		<input id="speciallineIpt" type="file" onchange="impProcessf(this, 'specialline')" /> <br><br>
