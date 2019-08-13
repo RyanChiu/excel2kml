@@ -295,11 +295,12 @@
 						break;
 					case 'IAA':
 						/**
-						 * 综合接入区落图：根据经纬度序列落图，并标注热力颜色
+						 * 综合接入区落图：根据经纬度序列按区域分子目录落图，并标注热力颜色
 						**/
 						var styles = "";
 						var polyids = new Array();
 						var i = 0;
+						sheet0_json.sort(sortBy('DP', false, String));
 						$.each(sheet0_json, function(n, iaa) {
 							if (polyids.indexOf(polygonstylewith(iaa.SRVS, true)) == -1) {
 								styles += polygonstylewith(iaa.SRVS, false);
