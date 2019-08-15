@@ -35,15 +35,24 @@
 	<div class="centerbox">
 		<div class="badge badge-dark text-wrap" 
 			style="width:565px;margin-bottom:23px;font-size:23px;line-height:1.5;">
-			点击下方按钮，载入需要落图的EXCEL文件，将自动转换为KML文件并保存到本地。
+			点击下方按钮，载入需要落图的EXCEL文件，将自动转换为KML文件并保存到本地。<br>
+			<font style="font-size:11pt">(Edge、Firefox、Chrome浏览器实测可用，其它浏览器未知)</font>
 		</div>
 		<input type="button" value="综合接入区（热度）清单" class="btn btn-outline-primary btn-lg" 
-			data-toggle="tooltip" data-placement="right" title="将综合接入区按区域内业务的多少分颜色落图。"
+			data-toggle="tooltip" data-placement="right" title="将综合接入区按区域内业务的多少，分颜色落图。"
 			style="width:565px;" onclick="javascript:$('#IAAIpt').click();" /> <br><br>
-		<input type="button" value="专线业务地址（打点）清单" class="btn btn-outline-primary btn-lg" style="width:565px;" onclick="javascript:$('#speciallineIpt').click();" /> <br><br>
-		<input type="button" value="波分核心节点（网状）清单" class="btn btn-outline-primary btn-lg" style="width:565px;" onclick="javascript:$('#simpleIpt').click();" /> <br><br>
-		<input type="button" value="波分环清单" class="btn btn-outline-primary btn-lg" style="width:565px;" onclick="javascript:$('#ringsIpt').click();" /> <br><br>
-		<input type="button" value="楼间缆（连接）清单" class="btn btn-outline-primary btn-lg" style="width:565px;" onclick="javascript:$('#interfibersIpt').click();" />
+		<input type="button" value="专线业务地址（打点）清单" class="btn btn-outline-primary btn-lg" 
+			data-toggle="tooltip" data-placement="right" title="若需打点数量过多，建议分批落图（每批建议1~2万个，也可视机器性能适量增减）。"
+			style="width:565px;" onclick="javascript:$('#speciallineIpt').click();" /> <br><br>
+		<input type="button" value="波分核心节点（网状）清单" class="btn btn-outline-primary btn-lg" 
+			data-toggle="tooltip" data-placement="right" title=""
+			style="width:565px;" onclick="javascript:$('#simpleIpt').click();" /> <br><br>
+		<input type="button" value="波分环清单" class="btn btn-outline-primary btn-lg" 
+			data-toggle="tooltip" data-placement="right" title=""
+			style="width:565px;" onclick="javascript:$('#ringsIpt').click();" /> <br><br>
+		<input type="button" value="楼间缆（连接）清单" class="btn btn-outline-primary btn-lg" 
+			data-toggle="tooltip" data-placement="right" title=""
+			style="width:565px;" onclick="javascript:$('#interfibersIpt').click();" />
 	</div>
 	<div style="display:none;">
 		<input id="IAAIpt" type="file" onchange="impProcessf(this, 'IAA')" /> <br><br>
@@ -58,7 +67,24 @@
 		<br>
 	</div>
 	<script>
+		/*
+		判断浏览器，以便对特定的浏览器进行部分不支持的补救
+		*/
+		var agent = navigator.userAgent.toLowerCase();
+		if(agent.indexOf('chrome') > 0){
+			//alert("chrome浏览器")
+		}
+		if(agent.indexOf('firefox') > 0){
+			//alert("firefox浏览器")
+		}
+		if(agent.indexOf('trident') > 0){
+			//alert("IE浏览器")
+			alert("暂不支持IE浏览器，建议使用微软最新Edge浏览器")
+		}
 
+		/*
+		启用bootstrap的tooltips功能
+		*/
 		$(function () {
 			$('[data-toggle="tooltip"]').tooltip()
 		})
