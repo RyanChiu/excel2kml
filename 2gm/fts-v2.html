@@ -439,6 +439,8 @@
 					nds = "";
 					var array_nds = [];
 					var rg = "";
+					var rgidx = -1;
+					var amnt = 0;
 					$.each(sheet0_json, function(n, value) {
 						if (value.LEVEL == 2) {
 							nd = "";
@@ -458,19 +460,28 @@
 							nd += '</Placemark>\n';
 							
 							if (rg != value.REGION) {
+								if (rgidx != -1) {
+									array_nds[rgidx] = array_nds[rgidx].replace(rg, rg + "(" + amnt + "台)");
+									amnt = 0;
+								}
+
 								nds += array_nds.join(" ");
 								array_nds = [];
 								array_nds.push('<Folder>\n'
 									+ '<name>' + value.REGION + '</name>\n'
 									+ '<open>1</open>\n');
+								rgidx = array_nds.length - 1;
 								array_nds.push('</Folder>\n');
 								array_nds.splice(array_nds.length - 1, 0, nd);
+								amnt += value.AMOUNT;
 								rg = value.REGION;
 							} else {
 								array_nds.splice(array_nds.length - 1, 0, nd);
+								amnt += value.AMOUNT;
 							}
 						}
 					});
+					array_nds[rgidx] = array_nds[rgidx].replace(rg, rg + "(" + amnt + "台)");
 					theFinalOutput = startswith('节点打点') + stationstyle + nmstyle + nds_1 + nds + array_nds.join(" ") + endswith;
 					break;
 				}
